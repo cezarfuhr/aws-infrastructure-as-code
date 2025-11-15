@@ -4,13 +4,33 @@ Automação completa de infraestrutura AWS usando Terraform, Docker, Ansible e G
 
 ## 🏗️ Recursos
 
+### Infraestrutura Core
 - **VPC** - Virtual Private Cloud com subnets públicas e privadas
 - **EC2 + Auto Scaling** - Instâncias escaláveis automaticamente
 - **RDS** - Banco de dados PostgreSQL com backups automáticos
 - **CloudFront + S3** - CDN e armazenamento de assets estáticos
-- **IAM + Security Groups** - Controle de acesso e segurança
+
+### Segurança e Compliance
+- **WAF** - Web Application Firewall com proteção contra SQL injection, XSS e DDoS
+- **CloudTrail** - Auditoria completa de ações AWS
+- **IAM + Security Groups** - Controle de acesso e segurança com least privilege
+- **Session Manager** - Acesso seguro sem bastion host ou chaves SSH
+- **Secrets Manager** - Gerenciamento seguro de credenciais
+
+### Rede e Performance
+- **VPC Endpoints** - Redução de custos eliminando NAT Gateway para serviços AWS
+- **Route 53** - DNS gerenciado com health checks e failover
+- **CloudFront** - CDN global para melhor performance
+
+### Observabilidade
 - **CloudWatch** - Monitoramento e logging completo
+- **Dashboards** - Visualização de métricas em tempo real
+- **Alarmes** - Notificações automáticas de problemas
+
+### DevOps
 - **Microservices** - Arquitetura de backend e frontend
+- **Docker Compose** - Orquestração local
+- **Ansible** - Automação de configuração
 - **CI/CD** - Pipeline automatizado com GitHub Actions
 
 ## 📋 Pré-requisitos
@@ -176,6 +196,51 @@ Gerencia monitoramento:
 - Log Groups
 - Metric Filters
 
+### WAF Module
+Web Application Firewall:
+- Proteção contra SQL Injection
+- Proteção contra XSS
+- Rate limiting (DDoS protection)
+- IP reputation lists
+- Geographic blocking (opcional)
+- Bot control (opcional)
+
+### CloudTrail Module
+Auditoria e compliance:
+- Trail multi-region
+- Encriptação KMS
+- Integração com CloudWatch Logs
+- S3 bucket com lifecycle
+- Alarmes de segurança
+- Data events (opcional)
+
+### Session Manager/Bastion Module
+Acesso seguro sem SSH:
+- AWS Systems Manager Session Manager
+- Sem necessidade de bastion host
+- Sem chaves SSH expostas
+- Logging de todas as sessões
+- Encriptação KMS
+- Auditoria completa
+
+### VPC Endpoints Module
+Redução de custos:
+- Gateway Endpoints (S3, DynamoDB) - Grátis
+- Interface Endpoints para SSM (Session Manager)
+- Interface Endpoints para CloudWatch
+- Interface Endpoints para Secrets Manager
+- Elimina necessidade de NAT Gateway
+- Reduz custos de transfer
+
+### Route 53 Module
+DNS e certificados:
+- Hosted zones
+- DNS records (A, CNAME, MX, TXT)
+- ACM certificates com validação DNS
+- Health checks
+- Failover automático
+- Certificados CloudFront
+
 ## 🐳 Docker Compose
 
 O arquivo `docker-compose.yml` inclui:
@@ -291,17 +356,121 @@ terraform output cloudwatch_dashboard_name
 
 ### Estimativa de Custos Mensais
 
-**Ambiente Dev** (~$100-150/mês):
-- EC2 t3.micro (1-2 instâncias)
-- RDS db.t3.micro (Single-AZ)
-- S3 + CloudFront (mínimo)
+**Ambiente Dev** (~$120-180/mês):
+- EC2 t3.micro (1-2 instâncias): ~$15/mês
+- RDS db.t3.micro (Single-AZ): ~$15/mês
+- S3 + CloudFront (mínimo): ~$10/mês
+- VPC Endpoints (SSM + Logs): ~$15/mês
+- WAF: ~$15/mês
+- CloudTrail: ~$5/mês
+- Session Manager: ~$5/mês
+- **Total**: ~$80-120/mês (sem NAT Gateway)
 
-**Ambiente Prod** (~$500-800/mês):
-- EC2 t3.small (2-6 instâncias)
-- RDS db.t3.small (Multi-AZ)
-- S3 + CloudFront
-- NAT Gateway
-- Backups e logs
+**Ambiente Prod** (~$400-600/mês):
+- EC2 t3.small (2-6 instâncias): ~$60-180/mês
+- RDS db.t3.small (Multi-AZ): ~$70/mês
+- S3 + CloudFront: ~$50/mês
+- VPC Endpoints: ~$30/mês
+- WAF: ~$15/mês
+- CloudTrail: ~$10/mês
+- Route 53: ~$5/mês
+- Backups e logs: ~$20/mês
+- **Total**: ~$260-380/mês (economizando ~$100/mês do NAT Gateway)
+
+### Economia com VPC Endpoints
+
+Com VPC Endpoints, você elimina:
+- **NAT Gateway**: $32/mês por AZ + $0.045/GB transfer = ~$50-150/mês economizados
+- **Data Transfer**: Redução de 60-80% nos custos de transfer
+
+**ROI**: Os VPC Endpoints se pagam eliminando apenas 1 NAT Gateway!
+
+## 🔒 Recursos de Segurança Adicionais
+
+### Acessar Instâncias com Session Manager
+
+```bash
+# Listar instâncias disponíveis
+aws ec2 describe-instances --filters "Name=tag:Project,Values=aws-infra" --query 'Reservations[].Instances[].[InstanceId,Tags[?Key==`Name`].Value|[0],State.Name]' --output table
+
+# Conectar via Session Manager
+aws ssm start-session --target i-1234567890abcdef0
+
+# Port forwarding para acessar RDS
+aws ssm start-session --target i-1234567890abcdef0 \
+    --document-name AWS-StartPortForwardingSession \
+    --parameters '{"portNumber":["5432"],"localPortNumber":["5432"]}'
+```
+
+### Visualizar Logs do CloudTrail
+
+```bash
+# Ver eventos recentes
+aws cloudtrail lookup-events --max-results 10
+
+# Buscar eventos específicos
+aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=RunInstances
+
+# Ver logs no CloudWatch
+aws logs tail /aws/cloudtrail/aws-infra --follow
+```
+
+### Gerenciar WAF
+
+```bash
+# Ver regras bloqueadas
+aws wafv2 get-sampled-requests \
+    --web-acl-arn <web-acl-arn> \
+    --rule-metric-name BlockedRequests \
+    --scope REGIONAL \
+    --time-window StartTime=<timestamp>,EndTime=<timestamp>
+
+# Adicionar IP à blacklist
+aws wafv2 update-ip-set \
+    --name aws-infra-ip-blacklist \
+    --scope REGIONAL \
+    --addresses "1.2.3.4/32"
+```
+
+### Gerenciar Route 53
+
+```bash
+# Listar hosted zones
+aws route53 list-hosted-zones
+
+# Criar novo record
+aws route53 change-resource-record-sets \
+    --hosted-zone-id <zone-id> \
+    --change-batch file://record-changes.json
+
+# Ver health check status
+aws route53 get-health-check-status --health-check-id <id>
+```
+
+## 🛡️ Boas Práticas de Segurança
+
+### Checklist de Segurança
+
+- ✅ Habilitar MFA para todos os usuários IAM
+- ✅ Usar VPC Endpoints para reduzir exposição à internet
+- ✅ Habilitar CloudTrail em todas as regiões
+- ✅ Configurar WAF com rate limiting
+- ✅ Usar Session Manager ao invés de SSH direto
+- ✅ Encriptar todos os dados em repouso (EBS, RDS, S3)
+- ✅ Encriptar dados em trânsito (TLS/HTTPS)
+- ✅ Rotacionar credenciais regularmente
+- ✅ Revisar security groups mensalmente
+- ✅ Habilitar GuardDuty para detecção de ameaças
+- ✅ Configurar AWS Config para compliance
+- ✅ Implementar least privilege em IAM policies
+
+### Compliance
+
+Esta infraestrutura atende requisitos de:
+- **SOC 2**: CloudTrail, encryption, access logs
+- **PCI DSS**: WAF, encryption, network segmentation
+- **HIPAA**: Encryption at rest/transit, audit logs
+- **GDPR**: Data encryption, audit trails, access controls
 
 ## 📝 License
 

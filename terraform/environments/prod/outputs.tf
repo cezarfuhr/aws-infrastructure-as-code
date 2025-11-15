@@ -100,3 +100,83 @@ output "useful_commands" {
 
   EOT
 }
+
+# VPC Endpoints Outputs
+output "vpc_endpoints_security_group_id" {
+  description = "ID do security group dos VPC endpoints"
+  value       = module.vpc_endpoints.security_group_id
+}
+
+output "s3_endpoint_id" {
+  description = "ID do S3 endpoint"
+  value       = module.vpc_endpoints.s3_endpoint_id
+}
+
+output "vpc_endpoints_cost_estimate" {
+  description = "Estimativa de custo dos VPC endpoints"
+  value       = module.vpc_endpoints.cost_savings_estimate
+}
+
+# Session Manager Outputs
+output "session_manager_connection_command" {
+  description = "Comando para conectar via Session Manager"
+  value       = module.bastion.connection_command
+}
+
+output "session_logs_bucket" {
+  description = "Bucket S3 para session logs"
+  value       = module.bastion.s3_bucket_name
+}
+
+# CloudTrail Outputs
+output "cloudtrail_arn" {
+  description = "ARN do CloudTrail"
+  value       = module.cloudtrail.trail_arn
+}
+
+output "cloudtrail_bucket" {
+  description = "Bucket S3 do CloudTrail"
+  value       = module.cloudtrail.s3_bucket_name
+}
+
+# WAF Outputs
+output "waf_web_acl_id" {
+  description = "ID do WAF Web ACL"
+  value       = module.waf.web_acl_id
+}
+
+output "waf_web_acl_arn" {
+  description = "ARN do WAF Web ACL"
+  value       = module.waf.web_acl_arn
+}
+
+# Route 53 Outputs
+output "route53_zone_id" {
+  description = "ID da hosted zone Route53"
+  value       = var.create_route53_zone ? module.route53[0].hosted_zone_id : null
+}
+
+output "route53_name_servers" {
+  description = "Name servers da hosted zone"
+  value       = var.create_route53_zone ? module.route53[0].hosted_zone_name_servers : []
+}
+
+output "route53_certificate_arn" {
+  description = "ARN do certificado ACM"
+  value       = var.create_route53_zone && var.create_route53_certificate ? module.route53[0].certificate_arn : null
+}
+
+output "domain_url" {
+  description = "URL do domínio principal"
+  value       = var.create_route53_zone ? "https://${var.domain_name}" : null
+}
+
+output "api_url" {
+  description = "URL da API"
+  value       = var.create_route53_zone ? "https://api.${var.domain_name}" : null
+}
+
+output "cdn_url" {
+  description = "URL do CDN"
+  value       = var.create_route53_zone ? "https://cdn.${var.domain_name}" : null
+}

@@ -35,6 +35,20 @@ provider "aws" {
   }
 }
 
+# Provider for CloudFront certificates (must be in us-east-1)
+provider "aws" {
+  alias  = "us-east-1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+    }
+  }
+}
+
 # Data sources
 data "aws_availability_zones" "available" {
   state = "available"
@@ -157,6 +171,102 @@ module "monitoring" {
   log_retention_days     = var.log_retention_days
   target_group_arn       = module.compute.target_group_arn
   alb_arn                = module.compute.alb_arn
+
+  tags = var.tags
+}
+
+# VPC Endpoints Module
+module "vpc_endpoints" {
+  source = "../../modules/vpc-endpoints"
+
+  project_name       = var.project_name
+  vpc_id             = module.vpc.vpc_id
+  vpc_cidr           = var.vpc_cidr
+  private_subnet_ids = module.vpc.private_subnet_ids
+  route_table_ids    = concat([module.vpc.public_route_table_id], module.vpc.private_route_table_ids)
+
+  enable_s3_endpoint              = var.enable_s3_endpoint
+  enable_dynamodb_endpoint        = var.enable_dynamodb_endpoint
+  enable_ssm_endpoints            = var.enable_ssm_endpoints
+  enable_logs_endpoint            = var.enable_logs_endpoint
+  enable_monitoring_endpoint      = var.enable_monitoring_endpoint
+  enable_secretsmanager_endpoint  = var.enable_secretsmanager_endpoint
+  enable_kms_endpoint             = var.enable_kms_endpoint
+
+  tags = var.tags
+}
+
+# Session Manager/Bastion Module
+module "bastion" {
+  source = "../../modules/bastion"
+
+  project_name             = var.project_name
+  vpc_id                   = module.vpc.vpc_id
+  ec2_iam_role_name        = module.security.ec2_iam_role_arn != "" ? split("/", module.security.ec2_iam_role_arn)[1] : ""
+  enable_session_logging   = var.enable_session_logging
+  enable_cloudwatch_logging = var.enable_cloudwatch_logging
+  enable_kms_encryption    = var.enable_kms_encryption
+  alarm_actions            = [module.monitoring.sns_topic_arn]
+
+  tags = var.tags
+
+  depends_on = [module.vpc_endpoints]
+}
+
+# CloudTrail Module
+module "cloudtrail" {
+  source = "../../modules/cloudtrail"
+
+  project_name                  = var.project_name
+  is_multi_region_trail         = var.cloudtrail_multi_region
+  enable_kms_encryption         = var.cloudtrail_enable_kms
+  enable_cloudwatch_logs        = var.cloudtrail_enable_cloudwatch
+  enable_data_events            = var.cloudtrail_enable_data_events
+  enable_insights               = var.cloudtrail_enable_insights
+  enable_security_alarms        = var.cloudtrail_enable_security_alarms
+  alarm_actions                 = [module.monitoring.sns_topic_arn]
+
+  tags = var.tags
+}
+
+# WAF Module
+module "waf" {
+  source = "../../modules/waf"
+
+  project_name             = var.project_name
+  scope                    = "REGIONAL"
+  alb_arn                  = module.compute.alb_arn
+  rate_limit               = var.waf_rate_limit
+  enable_ip_reputation     = var.waf_enable_ip_reputation
+  enable_bot_control       = var.waf_enable_bot_control
+  enable_geo_blocking      = var.waf_enable_geo_blocking
+  blocked_countries        = var.waf_blocked_countries
+  alarm_actions            = [module.monitoring.sns_topic_arn]
+
+  tags = var.tags
+}
+
+# Route 53 Module
+module "route53" {
+  count  = var.create_route53_zone ? 1 : 0
+  source = "../../modules/route53"
+
+  providers = {
+    aws.us-east-1 = aws.us-east-1
+  }
+
+  project_name                   = var.project_name
+  domain_name                    = var.domain_name
+  create_hosted_zone             = var.create_route53_zone
+  create_certificate             = var.create_route53_certificate
+  create_cloudfront_certificate  = var.create_cloudfront_certificate
+  subject_alternative_names      = var.certificate_sans
+  alb_dns_name                   = module.compute.alb_dns_name
+  alb_zone_id                    = module.compute.alb_zone_id
+  cloudfront_domain_name         = module.storage.cloudfront_domain_name
+  cloudfront_zone_id             = module.storage.cloudfront_hosted_zone_id
+  enable_health_checks           = var.route53_enable_health_checks
+  alarm_actions                  = [module.monitoring.sns_topic_arn]
 
   tags = var.tags
 }

@@ -244,3 +244,170 @@ variable "log_retention_days" {
   type        = number
   default     = 90
 }
+
+# VPC Endpoints Variables
+variable "enable_s3_endpoint" {
+  description = "Habilitar S3 endpoint"
+  type        = bool
+  default     = true
+}
+
+variable "enable_dynamodb_endpoint" {
+  description = "Habilitar DynamoDB endpoint"
+  type        = bool
+  default     = false
+}
+
+variable "enable_ssm_endpoints" {
+  description = "Habilitar SSM endpoints para Session Manager"
+  type        = bool
+  default     = true
+}
+
+variable "enable_logs_endpoint" {
+  description = "Habilitar CloudWatch Logs endpoint"
+  type        = bool
+  default     = true
+}
+
+variable "enable_monitoring_endpoint" {
+  description = "Habilitar CloudWatch Monitoring endpoint"
+  type        = bool
+  default     = true
+}
+
+variable "enable_secretsmanager_endpoint" {
+  description = "Habilitar Secrets Manager endpoint"
+  type        = bool
+  default     = true
+}
+
+variable "enable_kms_endpoint" {
+  description = "Habilitar KMS endpoint"
+  type        = bool
+  default     = false
+}
+
+# Session Manager/Bastion Variables
+variable "enable_session_logging" {
+  description = "Habilitar logging de sessões Session Manager"
+  type        = bool
+  default     = true
+}
+
+variable "enable_cloudwatch_logging" {
+  description = "Habilitar CloudWatch logging para Session Manager"
+  type        = bool
+  default     = true
+}
+
+variable "enable_kms_encryption" {
+  description = "Habilitar KMS encryption"
+  type        = bool
+  default     = true
+}
+
+# CloudTrail Variables
+variable "cloudtrail_multi_region" {
+  description = "Habilitar CloudTrail multi-region"
+  type        = bool
+  default     = true
+}
+
+variable "cloudtrail_enable_kms" {
+  description = "Habilitar KMS encryption no CloudTrail"
+  type        = bool
+  default     = true
+}
+
+variable "cloudtrail_enable_cloudwatch" {
+  description = "Enviar CloudTrail logs para CloudWatch"
+  type        = bool
+  default     = true
+}
+
+variable "cloudtrail_enable_data_events" {
+  description = "Habilitar data events no CloudTrail"
+  type        = bool
+  default     = false
+}
+
+variable "cloudtrail_enable_insights" {
+  description = "Habilitar CloudTrail Insights"
+  type        = bool
+  default     = false
+}
+
+variable "cloudtrail_enable_security_alarms" {
+  description = "Habilitar alarmes de segurança"
+  type        = bool
+  default     = true
+}
+
+# WAF Variables
+variable "waf_rate_limit" {
+  description = "Rate limit do WAF (requisições por 5 minutos)"
+  type        = number
+  default     = 2000
+}
+
+variable "waf_enable_ip_reputation" {
+  description = "Habilitar IP reputation list"
+  type        = bool
+  default     = true
+}
+
+variable "waf_enable_bot_control" {
+  description = "Habilitar bot control (custo adicional)"
+  type        = bool
+  default     = false
+}
+
+variable "waf_enable_geo_blocking" {
+  description = "Habilitar bloqueio geográfico"
+  type        = bool
+  default     = false
+}
+
+variable "waf_blocked_countries" {
+  description = "Lista de países bloqueados"
+  type        = list(string)
+  default     = []
+}
+
+# Route 53 Variables
+variable "create_route53_zone" {
+  description = "Criar hosted zone do Route53"
+  type        = bool
+  default     = false
+}
+
+variable "domain_name" {
+  description = "Nome do domínio"
+  type        = string
+  default     = ""
+}
+
+variable "create_route53_certificate" {
+  description = "Criar certificado ACM via Route53"
+  type        = bool
+  default     = false
+}
+
+variable "create_cloudfront_certificate" {
+  description = "Criar certificado CloudFront"
+  type        = bool
+  default     = false
+}
+
+variable "certificate_sans" {
+  description = "Subject Alternative Names para certificado"
+  type        = list(string)
+  default     = []
+}
+
+variable "route53_enable_health_checks" {
+  description = "Habilitar health checks Route53"
+  type        = bool
+  default     = true
+}

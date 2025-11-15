@@ -58,3 +58,40 @@ cloudfront_acm_certificate_arn = ""  # ARN do certificado ACM para CloudFront
 # Monitoring Configuration
 alarm_email_endpoints = ["your-email@example.com"]  # Emails para receber alarmes
 log_retention_days    = 90
+
+# VPC Endpoints Configuration
+enable_s3_endpoint             = true
+enable_dynamodb_endpoint       = false
+enable_ssm_endpoints           = true   # Required for Session Manager
+enable_logs_endpoint           = true
+enable_monitoring_endpoint     = true
+enable_secretsmanager_endpoint = true
+enable_kms_endpoint            = false
+
+# Session Manager Configuration
+enable_session_logging     = true
+enable_cloudwatch_logging  = true
+enable_kms_encryption      = true
+
+# CloudTrail Configuration
+cloudtrail_multi_region           = true
+cloudtrail_enable_kms             = true
+cloudtrail_enable_cloudwatch      = true
+cloudtrail_enable_data_events     = false  # Custo adicional
+cloudtrail_enable_insights        = false  # Custo adicional
+cloudtrail_enable_security_alarms = true
+
+# WAF Configuration
+waf_rate_limit            = 2000
+waf_enable_ip_reputation  = true
+waf_enable_bot_control    = false  # Custo adicional
+waf_enable_geo_blocking   = false
+waf_blocked_countries     = []  # ["CN", "RU"] para bloquear China e Rússia
+
+# Route 53 Configuration (opcional)
+create_route53_zone        = false  # true se você tem um domínio
+domain_name                = ""  # "example.com"
+create_route53_certificate = false  # true para criar certificado SSL
+create_cloudfront_certificate = false
+certificate_sans           = []  # ["*.example.com", "www.example.com"]
+route53_enable_health_checks = true
