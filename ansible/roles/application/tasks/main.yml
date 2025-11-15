@@ -1,0 +1,67 @@
+---
+- name: Create application log directory
+  file:
+    path: /var/log/app
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+
+- name: Clone application repository (if using Git)
+  git:
+    repo: "{{ app_repo_url }}"
+    dest: "{{ app_directory }}"
+    version: "{{ app_version | default('main') }}"
+    force: yes
+  when: app_repo_url is defined
+  become_user: "{{ app_user }}"
+
+- name: Copy docker-compose file
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ app_directory }}/docker-compose.yml"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
+
+- name: Copy environment file
+  template:
+    src: .env.j2
+    dest: "{{ app_directory }}/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0600'
+
+- name: Pull Docker images
+  community.docker.docker_compose:
+    project_src: "{{ app_directory }}"
+    pull: yes
+  become_user: "{{ app_user }}"
+
+- name: Start application with Docker Compose
+  community.docker.docker_compose:
+    project_src: "{{ app_directory }}"
+    state: present
+  become_user: "{{ app_user }}"
+
+- name: Wait for application to be ready
+  uri:
+    url: "http://localhost:{{ app_port }}/health"
+    status_code: 200
+  register: result
+  until: result.status == 200
+  retries: 30
+  delay: 10
+
+- name: Create systemd service for application
+  template:
+    src: app.service.j2
+    dest: "/etc/systemd/system/{{ project_name }}.service"
+    mode: '0644'
+  notify: restart application
+
+- name: Enable application service
+  systemd:
+    name: "{{ project_name }}"
+    enabled: yes
+    daemon_reload: yes

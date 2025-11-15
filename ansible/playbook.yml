@@ -1,0 +1,28 @@
+---
+- name: Configure AWS Infrastructure
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    project_name: "aws-infra"
+    app_user: "appuser"
+    app_directory: "/opt/app"
+    docker_compose_version: "2.23.0"
+
+  roles:
+    - common
+    - docker
+    - monitoring
+    - application
+
+  tasks:
+    - name: Display deployment information
+      debug:
+        msg: |
+          ========================================
+          Deployment completed successfully!
+          Project: {{ project_name }}
+          Host: {{ inventory_hostname }}
+          Environment: {{ ansible_env.ENVIRONMENT | default('production') }}
+          ========================================
