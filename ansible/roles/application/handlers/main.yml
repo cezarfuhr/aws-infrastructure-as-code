@@ -1,0 +1,5 @@
+---
+- name: restart application
+  systemd:
+    name: "{{ project_name }}"
+    state: restarted

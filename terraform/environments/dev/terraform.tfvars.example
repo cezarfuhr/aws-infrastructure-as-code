@@ -1,0 +1,59 @@
+# Development Environment Configuration
+
+# General Configuration
+project_name = "aws-infra"
+environment  = "dev"
+aws_region   = "us-east-1"
+
+tags = {
+  Owner       = "Development Team"
+  Environment = "Development"
+}
+
+# VPC Configuration
+vpc_cidr             = "10.1.0.0/16"
+public_subnet_cidrs  = ["10.1.1.0/24", "10.1.2.0/24"]
+private_subnet_cidrs = ["10.1.10.0/24", "10.1.11.0/24"]
+enable_nat_gateway   = false  # Custo reduzido para dev
+enable_flow_logs     = false  # Custo reduzido para dev
+
+# Security Configuration
+ssh_allowed_cidr_blocks = ["YOUR_IP/32"]
+
+# Compute Configuration
+instance_type        = "t3.micro"  # Instância menor para dev
+key_name             = "your-dev-key-pair"
+asg_min_size         = 1
+asg_max_size         = 2
+asg_desired_capacity = 1
+app_port             = 8080
+health_check_path    = "/health"
+certificate_arn      = ""
+enable_alb_deletion_protection = false  # Sem proteção em dev
+
+# Database Configuration
+db_engine                    = "postgres"
+db_engine_version            = "15.4"
+db_instance_class            = "db.t3.micro"  # Instância menor para dev
+db_allocated_storage         = 20
+db_max_allocated_storage     = 50
+db_name                      = "appdb_dev"
+db_username                  = "admin"
+db_multi_az                  = false  # Single AZ para dev
+db_backup_retention_period   = 7
+db_deletion_protection       = false  # Sem proteção em dev
+db_enable_performance_insights = false
+db_parameter_group_family    = "postgres15"
+db_create_read_replica       = false
+
+# Storage Configuration
+s3_enable_versioning       = false  # Sem versionamento em dev
+s3_enable_lifecycle_rules  = false
+cloudfront_default_root_object = "index.html"
+cloudfront_price_class     = "PriceClass_100"  # Menor custo
+cloudfront_domain_aliases  = []
+cloudfront_acm_certificate_arn = ""
+
+# Monitoring Configuration
+alarm_email_endpoints = ["dev-team@example.com"]
+log_retention_days    = 7  # Menor retenção em dev
